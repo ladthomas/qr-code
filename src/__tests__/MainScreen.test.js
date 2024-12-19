@@ -1,34 +1,72 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import MainScreen from '../screens/MainScreen';
 import { Provider } from 'react-redux';
 import store from '../redux/store';
-import MainScreen from '../screens/MainScreen';
+import { useNavigation } from '@react-navigation/native';
 
-describe('MainScreen', () => {
-  it('renders input fields and button', () => {
-    const { getByPlaceholderText, getByText } = render(
+// Mock de la navigation
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(),
+}));
+
+describe('Tests unitaires pour MainScreen', () => {
+  test('Snapshot de MainScreen', () => {
+    const { toJSON } = render(
       <Provider store={store}>
         <MainScreen />
       </Provider>
     );
+    expect(toJSON()).toMatchSnapshot();
+  });
 
+  test('Le composant MainScreen est bien rendu', () => {
+    const { getByText } = render(
+      <Provider store={store}>
+        <MainScreen />
+      </Provider>
+    );
+    expect(getByText('Nom')).toBeTruthy();
+  });
+
+  test('Les champs de saisie pour nom et prénom existent', () => {
+    const { getByPlaceholderText } = render(
+      <Provider store={store}>
+        <MainScreen />
+      </Provider>
+    );
     expect(getByPlaceholderText('Entrez votre nom')).toBeTruthy();
     expect(getByPlaceholderText('Entrez votre prénom')).toBeTruthy();
+  });
+
+  test('Le bouton permettant de générer un QR Code existe', () => {
+    const { getByText } = render(
+      <Provider store={store}>
+        <MainScreen />
+      </Provider>
+    );
     expect(getByText('Générer un QR Code')).toBeTruthy();
   });
 
-  it('navigates to QRCode screen on valid input', () => {
-    const { getByPlaceholderText, getByText } = render(
+  test('La navigation vers l’écran QRCode est appelée une fois lors du clic sur le bouton', () => {
+    const navigate = jest.fn();
+    useNavigation.mockReturnValue({ navigate });
+
+    const { getByText, getByPlaceholderText } = render(
       <Provider store={store}>
         <MainScreen />
       </Provider>
     );
 
-    fireEvent.changeText(getByPlaceholderText('Entrez votre nom'), 'Jean');
-    fireEvent.changeText(getByPlaceholderText('Entrez votre prénom'), 'Dupont');
+    // Simule la saisie dans les champs
+    fireEvent.changeText(getByPlaceholderText('Entrez votre nom'), 'Doe');
+    fireEvent.changeText(getByPlaceholderText('Entrez votre prénom'), 'John');
+
+    // Simule le clic sur le bouton
     fireEvent.press(getByText('Générer un QR Code'));
 
-    // Vérifiez si la navigation est correctement appelée
-    // (Utilisez un mock pour `useNavigation` si nécessaire)
+    // Vérifie si la navigation a été appelée
+    expect(navigate).toHaveBeenCalledWith('QRCode');
+    expect(navigate).toHaveBeenCalledTimes(1);
   });
 });
